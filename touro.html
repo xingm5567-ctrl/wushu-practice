@@ -199,6 +199,9 @@
     // ➕【重要修正】すでにHTMLにある「ytPlayer」を検知して遠隔操作の権限をガッチリ握る処理
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('ytPlayer', {
+            playerVars: {        // 追加
+                'controls': 0    // 追加
+            },                    // 追加
             events: {
                 'onReady': function(event) {
                     isPlayerReady = true;
