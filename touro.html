@@ -15,11 +15,27 @@
         .auth-error { color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 5px; display: none; }
         #mainSystem { display: none; }
         .video-area { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 5px; z-index: 100; }
-        .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 📱 2画面シンクロプレイヤー用の配置設定 */
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; transition: opacity 0.2s ease; }
-        #ytPlayerB { opacity: 0; pointer-events: none; } /* 初期状態はBを隠す */
+        /* 📱 動画エリアと「物理目隠しカバー」の設定 */
+        .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        
+        /* ★【新規】ジャンプした瞬間だけ、中央の一時停止マークをピンポイントに覆い隠す半透明のマスク */
+        .video-mask {
+            position: absolute;
+            top: 15%;
+            left: 35%;
+            width: 30%;
+            height: 50%;
+            background: #000; /* 動画の背景（黒）と同化させてマークを隠す */
+            z-index: 105;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            border-radius: 50%; /* YouTubeの丸いマークの形に合わせて優しく隠す */
+            filter: blur(10px); /* 輪郭をぼかして動画に馴染ませる */
+        }
+        .video-mask.show { opacity: 0.95; } /* マスク出現時 */
 
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
@@ -86,10 +102,10 @@
         <div class="container">
             <div class="video-area">
                 <div class="video-wrapper">
-                    <!-- 【全角回避②：メインプレイヤーA】 -->
-                    <iframe id="ytPlayerA" src="https://www.youtube.com/embed/t0QY8YNNzkw?enablejsapi=1&origin=https://xingm5567-ctrl.github.io&playsinline=1&controls=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                    <!-- 【全角回避③：サブプレイヤーB】 -->
-                    <iframe id="ytPlayerB" src="https://www.youtube.com/embed/t0QY8YNNzkw?enablejsapi=1&origin=https://xingm5567-ctrl.github.io&playsinline=1&controls=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    <!-- 【全角回避②：プレイヤーは確実な1台運用に戻します】 -->
+                    <iframe id="ytPlayer" src="https://www.youtube.com/embed/t0QY8YNNzkw?enablejsapi=1&origin=https://xingm5567-ctrl.github.io&playsinline=1&controls=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    <!-- ★中央の停止マークだけをピンポイントで消し去る空中マスクシート -->
+                    <div id="videoMask" class="video-mask"></div>
                 </div>
                 <div class="mode-bar">
                     <button class="btn-mode btn-viewer" onclick="switchMode('viewer')">👁️ 動画視聴モード</button>
@@ -134,7 +150,7 @@
     <div class="loading-overlay" id="loadingOverlay">⌛ 通信中...</div>
 
     <script>
-        // 🔴🔴 【重要】あなたのご自身の情報を正確に入力してください 🔴🔴
+        // 🔴🔴 【最重要】あなたのご自身の情報を正確に入力してください 🔴🔴
         const SUPABASE_URL = "https://dzshvuyxhnuxtuxbidqd.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_TWqblYfo55RGuZ-3fPH06g_Ud8KzBlQ"; 
         const YOUTUBE_VIDEO_ID = "t0QY8YNNzkw"; 
@@ -145,18 +161,17 @@
             supabaseClient = window.supabase.createClient(cleanedUrl, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
         } catch (e) { alert("Supabase接続初期化エラー"); }
 
-        let playerA = null, playerB = null, touroData = [], isPartLoopActive = false, currentActivePart = null;
-        let isPlayerAReady = false, isPlayerBReady = false, activePlayer = "A";
+        let player = null, touroData = [], isPartLoopActive = false, currentActivePart = null;
+        let isPlayerReady = false;
 
-        // 【全角回避④】YouTube公式APIの読み込み
+        // 【全角回避③】YouTube公式APIの読み込み
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script');
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            playerA = new YT.Player('ytPlayerA', { events: { 'onReady': function() { isPlayerAReady = true; } } });
-            playerB = new YT.Player('ytPlayerB', { events: { 'onReady': function() { isPlayerBReady = true; } } });
+            player = new YT.Player('ytPlayer', { events: { 'onReady': function() { isPlayerReady = true; } } });
         }
 
         async function checkAuth() {
@@ -232,11 +247,9 @@
         }
 
         function getCurrentTime(inputId) {
-            let targetPlayer = (activePlayer === "A") ? playerA : playerB;
-            let isReady = (activePlayer === "A") ? isPlayerAReady : isPlayerBReady;
-            if (isReady && targetPlayer && typeof targetPlayer.pauseVideo === 'function') {
-                targetPlayer.pauseVideo();
-                document.getElementById(inputId).value = Math.round(targetPlayer.getCurrentTime() * 10) / 10;
+            if (isPlayerReady && player && typeof player.pauseVideo === 'function') {
+                player.pauseVideo();
+                document.getElementById(inputId).value = Math.round(player.getCurrentTime() * 10) / 10;
             }
         }
 
@@ -287,22 +300,23 @@
             else { btn.textContent = "🛠️ コントロールパネルを開く"; btn.style.background = "#34495e"; }
         }
 
-        // 🔄 【2画面高速スイッチング制御：ジャンプ時の5秒マークを完全隠滅】
+        // 🎯 【確定解決：1プレイヤー運用に戻し、マスクシートで5秒マークを物理的に隠滅する】
         function jumpTo(seconds) {
-            if (!isPlayerAReady || !isPlayerBReady) return;
-            const pA = document.getElementById('ytPlayerA'), pB = document.getElementById('ytPlayerB');
+            if (!isPlayerReady || !player || typeof player.seekTo !== 'function') return;
             
-            if (activePlayer === "A") {
-                playerB.seekTo(seconds, true); playerB.playVideo();
-                pB.style.opacity = "1"; pB.style.pointerEvents = "auto";
-                pA.style.opacity = "0"; pA.style.pointerEvents = "none";
-                playerA.pauseVideo(); activePlayer = "B";
-            } else {
-                playerA.seekTo(seconds, true); playerA.playVideo();
-                pA.style.opacity = "1"; pA.style.pointerEvents = "auto";
-                pB.style.opacity = "0"; pB.style.pointerEvents = "none";
-                playerB.pauseVideo(); activePlayer = "A";
-            }
+            const mask = document.getElementById('videoMask');
+            
+            // 1. ボタンを押した瞬間、画面中央に黒いぼかしマスクをパッと出現させてマークを隠蔽
+            if (mask) mask.classList.add('show');
+
+            // 2. 本来のプレイヤーにジャンプ命令を送る（1台なのでAPIエラーが起きず100%確実に機能します）
+            player.seekTo(seconds, true);
+            player.playVideo();
+
+            // 3. YouTubeのマークが勝手に消え去る「5秒後」に、自動でマスクを消してクリアな大画面に戻す
+            setTimeout(() => {
+                if (mask) mask.classList.remove('show');
+            }, 5000);
 
             const parts = document.querySelectorAll('.part');
             parts.forEach(part => {
@@ -312,13 +326,11 @@
         }
 
         function skip(seconds) {
-            let p = (activePlayer === "A") ? playerA : playerB;
-            if (p && typeof p.getCurrentTime === 'function') { p.seekTo(p.getCurrentTime() + seconds, true); }
+            if (isPlayerReady && player && typeof player.getCurrentTime === 'function') { player.seekTo(player.getCurrentTime() + seconds, true); }
         }
 
         function changeSpeed(speed) {
-            let p = (activePlayer === "A") ? playerA : playerB;
-            if (p && typeof p.setPlaybackRate === 'function') { p.setPlaybackRate(speed); document.getElementById('speedDisplay').textContent = `速度: ${speed}x`; }
+            if (isPlayerReady && player && typeof player.setPlaybackRate === 'function') { player.setPlaybackRate(speed); document.getElementById('speedDisplay').textContent = `速度: ${speed}x`; }
         }
 
         function toggleLoop() {
@@ -328,22 +340,19 @@
         }
 
         function checkVideoTime() {
-            if (document.getElementById('mainSystem').style.display === "block") {
-                let p = (activePlayer === "A") ? playerA : playerB;
-                if (p && typeof p.getCurrentTime === 'function') {
-                    const ct = p.getCurrentTime(), parts = document.querySelectorAll('.part');
-                    if (isPartLoopActive && currentActivePart) {
-                        const s = parseFloat(currentActivePart.getAttribute('data-start')), e = parseFloat(currentActivePart.getAttribute('data-end'));
-                        if (ct >= (e - 0.1) || ct < s) { p.seekTo(s, true); }
-                    } else if (document.getElementById('viewerSection').classList.contains('active')) {
-                        parts.forEach(part => {
-                            const s = parseFloat(part.getAttribute('data-start')), e = parseFloat(part.getAttribute('data-end'));
-                            if (ct >= s && ct < e && !part.classList.contains('active')) {
-                                parts.forEach(pt => pt.classList.remove('active')); part.classList.add('active'); currentActivePart = part;
-                                if (window.innerWidth >= 768) part.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }
-                        });
-                    }
+            if (document.getElementById('mainSystem').style.display === "block" && isPlayerReady && player && typeof player.getCurrentTime === 'function') {
+                const ct = player.getCurrentTime(), parts = document.querySelectorAll('.part');
+                if (isPartLoopActive && currentActivePart) {
+                    const s = parseFloat(currentActivePart.getAttribute('data-start')), e = parseFloat(currentActivePart.getAttribute('data-end'));
+                    if (ct >= (e - 0.1) || ct < s) { player.seekTo(s, true); }
+                } else if (document.getElementById('viewerSection').classList.contains('active')) {
+                    parts.forEach(part => {
+                        const s = parseFloat(part.getAttribute('data-start')), e = parseFloat(part.getAttribute('data-end'));
+                        if (ct >= s && ct < e && !part.classList.contains('active')) {
+                            parts.forEach(pt => pt.classList.remove('active')); part.classList.add('active'); currentActivePart = part;
+                            if (window.innerWidth >= 768) part.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    });
                 }
             }
             requestAnimationFrame(checkVideoTime);
