@@ -404,20 +404,22 @@
 
     function jumpTo(seconds) {
         if (isPlayerReady && player && typeof player.seekTo === 'function') {
-            const playerElem = document.getElementById('ytPlayer');
-            
-            // ★ジャンプした瞬間に動画エリアを一瞬だけ「透明（非表示）」にします
-            if (playerElem) {
-                playerElem.style.opacity = '0.01'; // ほぼ透明にする
-            }
+            // 現在設定されているユーザーの再生速度を記憶しておく
+            const currentRate = player.getPlaybackRate() || 1.0;
 
+            // 1. 目的の秒数にワープして再生
             player.seekTo(seconds, true);
             player.playVideo();
             
-            // ★0.4秒後（アイコンが消えるタイミング）に自動で動画をパッと100%表示に戻します
+            // 2. 0.1秒後に一瞬だけ倍速にして、一時停止マークのタイマーを強制終了させる
             setTimeout(() => {
-                if (playerElem) playerElem.style.opacity = '1';
-            }, 400);
+                player.setPlaybackRate(2.0); // 瞬間的に2倍速にする
+                
+                // 3. さらに0.1秒後（合計0.2秒後）に、元の再生速度（スロー等）にピタッと戻す
+                setTimeout(() => {
+                    player.setPlaybackRate(currentRate);
+                }, 100);
+            }, 100);
 
             // ハイライト更新処理（以下据え置き）
             const parts = document.querySelectorAll('.part');
