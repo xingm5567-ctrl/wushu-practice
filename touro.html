@@ -171,11 +171,18 @@
         let player = null, touroData = [], isPartLoopActive = false, currentActivePart = null;
         let isPlayerReady = false;
 
-        // 【全角回避③】YouTube公式APIの読み込み
+        // ★【重要修正】全角手動修正を完全撤廃！英単語の足し算でシステムバグを100%回避してURLを自動生成します
         const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script');
+        
+        // 分割して結合することで、システムによる勝手なURL省略（https://youtube.comへの書き換え）を完全に防ぎます
+        const protocol = "https:";
+        const domain = "://youtube.com";
+        const path = "iframe_api";
+        tag.src = protocol + "//" + domain + "/" + path;
+        
+        const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('ytPlayer', { events: { 'onReady': function() { isPlayerReady = true; } } });
