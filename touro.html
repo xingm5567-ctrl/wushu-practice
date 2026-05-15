@@ -402,17 +402,24 @@
         else { togglePanelBtn.textContent = "🛠️ コントロールパネルを開く"; togglePanelBtn.style.background = "#34495e"; }
     }
 
-    // 🥋【改良：ジャンプ時の一時停止マークを完全に消し去る処理】
     function jumpTo(seconds) {
         if (isPlayerReady && player && typeof player.seekTo === 'function') {
-            // 1. 先に「再生しろ」という命令を最優先で送り、プレイヤーの脳内を強制再生状態にします
+            const playerElem = document.getElementById('ytPlayer');
+            
+            // ★ジャンプした瞬間に動画エリアを一瞬だけ「透明（非表示）」にします
+            if (playerElem) {
+                playerElem.style.opacity = '0.01'; // ほぼ透明にする
+            }
+
+            player.seekTo(seconds, true);
             player.playVideo();
             
-            // 2. 再生状態を維持したまま、1コマの猶予もなく即座に目的の秒数へワープさせます
-            // これにより、YouTube側が「動画が止まった」と勘違いするのを防ぎ、停止マークが出なくなります
-            player.seekTo(seconds, true);
-            
-            // ハイライト更新処理
+            // ★0.4秒後（アイコンが消えるタイミング）に自動で動画をパッと100%表示に戻します
+            setTimeout(() => {
+                if (playerElem) playerElem.style.opacity = '1';
+            }, 400);
+
+            // ハイライト更新処理（以下据え置き）
             const parts = document.querySelectorAll('.part');
             parts.forEach(part => {
                 const start = parseFloat(part.getAttribute('data-start'));
