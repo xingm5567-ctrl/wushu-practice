@@ -455,7 +455,7 @@
             // 🌟【新規追加】YouTubeの薄暗い影が自動消滅する「5秒後」に、こちらの美白マスクも自動で消去する
             setTimeout(() => {
                 if (bMask) bMask.classList.remove('show');
-            }, 4800);
+            }, 4775);
             
             // ハイライト更新処理（以下すべて完全据え置き）
             const parts = document.querySelectorAll('.part');
@@ -500,11 +500,25 @@
             const currentTime = player.getCurrentTime();
             const parts = document.querySelectorAll('.part');
 
+            // 【ループONの場合：現在選択されているパートの枠を徹底監視】
             if (isPartLoopActive && currentActivePart) {
                 const start = parseFloat(currentActivePart.getAttribute('data-start'));
                 const end = parseFloat(currentActivePart.getAttribute('data-end'));
-                if (currentTime >= (end - 0.1) || currentTime < start) {
+                
+                // 終了時間の「0.1秒前」に達するか、あるいは超えてしまったら即巻き戻し
+                if (ct >= (end - 0.1) || ct < start) {
                     player.seekTo(start, true);
+    
+                    // 🌟【新規追加】ループで自動巻き戻しが起きた瞬間にも、薄暗さ消去マスクを発動
+                    const bMask = document.getElementById('brightMask');
+                    if (bMask) {
+                        bMask.classList.add('show');
+                        
+                        // YouTubeの影が消える5秒後に自動でマスクを消去
+                        setTimeout(() => {
+                            bMask.classList.remove('show');
+                        }, 4775);
+                    }
                 }
             } 
             else if (document.getElementById('viewerSection').classList.contains('active')) {
