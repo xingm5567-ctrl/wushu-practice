@@ -24,16 +24,16 @@
         .video-area { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 0; z-index: 100; }
         .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 🚀【スマホ限界突破版】裏側で600%（6倍）の超々巨大サイズでレンダリングさせ、16.6666%に超高密度縮小 */
+        /* 🚀【10倍限界突破版】裏側で1000%（10倍）の超々巨大サイズでレンダリングさせ、10%に超高密度縮小 */
         iframe { 
             position: absolute; 
             top: 0; 
             left: 0; 
-            width: 600% !important; /* スマホの高解像度ディスプレイに対抗するため6倍に拡張 */
-            height: 600% !important; 
+            width: 1000% !important; /* ブラウザが許容する最大級の10倍サイズへ拡張 */
+            height: 1000% !important; 
             border: none; 
             transform-origin: top left; 
-            transform: scale(0.166667); /* 6分の1に凝縮（マークの存在感を極限まで削ぎ落とします） */
+            transform: scale(0.1); /* 10分の1に極小化（マークの存在感を米粒サイズまで削ぎ落とします） */
         }
         
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
