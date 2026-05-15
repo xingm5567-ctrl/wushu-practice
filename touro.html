@@ -4,13 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>武術套路 オンライン練習＆編集システム</title>
-    <script>
-        // ★【システムバグ回避】Supabase公式スクリプトを分解結合して安全に読み込みます
-        const sbScript = document.createElement('script');
-        const s_pt = "https:", s_dm = "cdn.jsdelivr.net", s_ph = "npm/@supabase/supabase-js@2";
-        sbScript.src = s_pt + "//" + s_dm + "/" + s_ph;
-        document.head.appendChild(sbScript);
-    </script>
+    <!-- Supabase公式スクリプト -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; margin: 0; padding: 15px; background: #f5f5f5; color: #333; }
@@ -27,9 +22,7 @@
         
         .video-area { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 0; z-index: 100; }
         .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        /* ★ 安全な標準動画土台 */
-        #ytPlayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
@@ -103,14 +96,15 @@
         </div>
     </div>
 
-    <!-- 📱 メインシステム（ログイン成功後に表示） -->
+    <!-- 📱 メインシステム -->
     <div id="mainSystem">
         <div class="container">
             <div class="video-area">
                 <div class="video-wrapper">
-                    <!-- ★ 正規の空箱を設置。YouTubeのセキュリティ制限を100%回避する王道設計 -->
-                    <div id="ytPlayer"></div>
+                    <iframe id="ytPlayer" src="https://www.youtube.com/embed/t0QY8YNNzkw?enablejsapi=1&origin=https://xingm5567-ctrl.github.io&playsinline=1&controls=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
                 </div>
+
+
 
                 <div class="mode-bar">
                     <button class="btn-mode btn-viewer" onclick="switchMode('viewer')">👁️ 動画視聴モード</button>
@@ -176,295 +170,314 @@
     <div class="loading-overlay" id="loadingOverlay">⌛ 通信中...</div>
 
     <script>
-        // 🔴🔴 【最重要】あなたのご自身の情報を正確に入力してください 🔴🔴
-        const SUPABASE_URL = "https://dzshvuyxhnuxtuxbidqd.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_TWqblYfo55RGuZ-3fPH06g_Ud8KzBlQ"; 
-        const YOUTUBE_VIDEO_ID = "t0QY8YNNzkw"; 
+    // 🔴🔴 【最重要】あなたのURLとPublishable keyに正確に書き換えてください 🔴🔴
+    const SUPABASE_URL = "https://dzshvuyxhnuxtuxbidqd.supabase.co"; 
+    const SUPABASE_ANON_KEY = "sb_publishable_TWqblYfo55RGuZ-3fPH06g_Ud8KzBlQ"; 
 
-        let supabaseClient = null;
-        let player = null;
-        let touroData = [];
-        let isPartLoopActive = false;
-        let currentActivePart = null;
-        let isPlayerReady = false; 
+    let supabaseClient;
+    try {
+        let cleanedUrl = SUPABASE_URL.trim().replace(/\/+$/, "");
+        supabaseClient = window.supabase.createClient(cleanedUrl, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false }
+        });
+    } catch (e) {
+        console.error("Supabase初期化エラー:", e);
+    }
 
-        // ★【システムバグ回避】APIスクリプトURLを分割組み立てして安全に読み込みます
-        const tag = document.createElement('script');
-        const pcol = "https:", dmain = "://youtube.com", pth = "iframe_api";
-        tag.src = pcol + "//" + dmain + "/" + pth;
-        const firstScriptTag = document.getElementsByTagName('script');
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    let player = null;
+    let touroData = [];
+    let isPartLoopActive = false;
+    let currentActivePart = null;
+    let isPlayerReady = false; 
 
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('ytPlayer', {
-                videoId: YOUTUBE_VIDEO_ID,
-                playerVars: { 'playsinline': 1, 'controls': 1, 'rel': 0 },
-                events: { 'onReady': function() { isPlayerReady = true; } }
-            });
+    // ➕【重要修正】YouTube公式APIスクリプトを安全に通信接続する命令（URL変換回避用）
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // ➕【重要修正】すでにHTMLにある「ytPlayer」を検知して遠隔操作の権限をガッチリ握る処理
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('ytPlayer', {
+            events: {
+                'onReady': function(event) {
+                    isPlayerReady = true;
+                    console.log("YouTube Player Ready");
+                }
+            }
+        });
+    }
+
+    // 🔑 1. 合言葉のチェック
+    async function checkAuth() {
+        const inputPass = document.getElementById('authPassword').value.trim();
+        if (!supabaseClient) {
+            alert("データベースの設定が正しくありません。");
+            return;
         }
-
-        // ★【遅延初期化】ユーザーがログインボタンを押した瞬間に接続を走らせます
-        async function checkAuth() {
-            const inputPass = document.getElementById('authPassword').value.trim();
+        showLoading(true);
+        document.getElementById('authError').style.display = "none";
+        
+        try {
+            const { data, error } = await supabaseClient.from('system_settings').select('password_value').limit(1).single();
+            if (error) throw error;
             
-            if (!supabaseClient) {
-                try {
-                    let cleanedUrl = SUPABASE_URL.trim().replace(/\/+$/, "");
-                    supabaseClient = window.supabase.createClient(cleanedUrl, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-                } catch (e) {
-                    alert("Supabase初期化エラー");
-                    return;
-                }
-            }
-
-            showLoading(true);
-            try {
-                const { data, error } = await supabaseClient.from('system_settings').select('password_value').limit(1).single();
-                if (error) throw error;
-                if (data && data.password_value === inputPass) {
-                    document.getElementById('authSection').style.display = "none";
-                    document.getElementById('mainSystem').style.display = "block";
-                    await loadTouroData(); // ログイン成功後にデータを読み込む
-                    requestAnimationFrame(checkVideoTime); // 監視システムを安全に起動
-                } else {
-                    document.getElementById('authError').style.display = "block";
-                }
-            } catch (err) {
-                alert("通信または認証エラーが発生しました: " + err.message);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // 📥 2. データベースからデータ読み込み
-        async function loadTouroData() {
-            showLoading(true);
-            try {
-                const { data, error } = await supabaseClient.from('touro_data').select('*').order('start_time', { ascending: true });
-                if (error) throw error;
-                touroData = data || [];
-                renderViewer();
-                renderEditor();
-            } catch (err) {
-                alert("データ読み込み失敗: " + err.message);
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function switchMode(mode) {
-            document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
-            if (mode === 'viewer') {
-                document.getElementById('viewerSection').classList.add('active');
-                document.getElementById('floatWrapper').style.display = "flex";
-                renderViewer();
+            if (data && data.password_value === inputPass) {
+                document.getElementById('authSection').style.display = "none";
+                document.getElementById('mainSystem').style.display = "block";
+                await loadTouroData(); 
+                requestAnimationFrame(checkVideoTime); 
             } else {
-                document.getElementById('editorSection').classList.add('active');
-                document.getElementById('floatWrapper').style.display = "none";
-                if(document.getElementById('controlPanel').classList.contains('open')) togglePanel();
-                renderEditor();
+                document.getElementById('authError').style.display = "block";
             }
+        } catch (err) {
+            alert("通信または認証エラーが発生しました: " + err.message);
+        } finally {
+            showLoading(false);
         }
+    }
 
-        function renderViewer() {
-            const container = document.getElementById('viewerSection');
-            container.innerHTML = '';
-            touroData.forEach((item) => {
-                const min = Math.floor(item.start_time / 60), sec = Math.floor(item.start_time % 60).toString().padStart(2, '0');
-                container.innerHTML += `
-                    <div class="part" id="part-${item.id}" data-start="${item.start_time}" data-end="${item.end_time}">
-                        <button class="btn-jump" onclick="jumpTo(${item.start_time})">▶ ${min}:${sec} ${item.title}</button>
-                        <div class="comment">${item.comment || ''}</div>
-                    </div>
-                `;
-            });
+    // 📥 2. データベースからデータ読み込み
+    async function loadTouroData() {
+        showLoading(true);
+        try {
+            const { data, error } = await supabaseClient.from('touro_data').select('*').order('start_time', { ascending: true });
+            if (error) throw error;
+            touroData = data || [];
+            renderViewer();
+            renderEditor();
+        } catch (err) {
+            alert("データ読み込み失敗: " + err.message);
+        } finally {
+            showLoading(false);
         }
+    }
 
-        function renderEditor() {
-            const container = document.getElementById('editListContainer');
-            container.innerHTML = '';
-            touroData.forEach((item) => {
-                container.innerHTML += `
-                    <div class="edit-item">
-                        <div class="edit-item-header">
-                            <div>${item.title} <span style="font-size:11px; color:#7f8c8d;">(${item.start_time}秒～${item.end_time}秒)</span></div>
-                            <div class="edit-item-actions">
-                                <button class="btn-edit-action btn-action-edit" onclick="startEdit('${item.id}')">編集</button>
-                                <button class="btn-edit-action btn-action-del" onclick="deleteData('${item.id}', '${item.title}')">削除</button>
-                            </div>
+    function switchMode(mode) {
+        document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
+        if (mode === 'viewer') {
+            document.getElementById('viewerSection').classList.add('active');
+            document.getElementById('floatWrapper').style.display = "flex";
+            renderViewer();
+        } else {
+            document.getElementById('editorSection').classList.add('active');
+            document.getElementById('floatWrapper').style.display = "none";
+            if(document.getElementById('controlPanel').classList.contains('open')) togglePanel();
+            renderEditor();
+        }
+    }
+
+    // 🛠️【バグ修正：タイトルに開始時間が表示されない件を解決】
+    function renderViewer() {
+        const container = document.getElementById('viewerSection');
+        container.innerHTML = '';
+        touroData.forEach((item) => {
+            // 秒数を「分:秒」に変換する簡易処理
+            const min = Math.floor(item.start_time / 60);
+            const sec = Math.floor(item.start_time % 60).toString().padStart(2, '0');
+            const timeStr = `${min}:${sec}`;
+
+            container.innerHTML += `
+                <div class="part" id="part-${item.id}" data-start="${item.start_time}" data-end="${item.end_time}">
+                    <button class="btn-jump" onclick="jumpTo(${item.start_time})">▶ ${timeStr} ${item.title}</button>
+                    <div class="comment">${item.comment || ''}</div>
+                </div>
+            `;
+        });
+    }
+
+    function renderEditor() {
+        const container = document.getElementById('editListContainer');
+        container.innerHTML = '';
+        touroData.forEach((item) => {
+            container.innerHTML += `
+                <div class="edit-item">
+                    <div class="edit-item-header">
+                        <div>${item.title} <span style="font-size:11px; color:#7f8c8d;">(${item.start_time}秒～${item.end_time}秒)</span></div>
+                        <div class="edit-item-actions">
+                            <button class="btn-edit-action btn-action-edit" onclick="startEdit('${item.id}')">編集</button>
+                            <button class="btn-edit-action btn-action-del" onclick="deleteData('${item.id}', '${item.title}')">削除</button>
                         </div>
                     </div>
-                `;
-            });
+                </div>
+            `;
+        });
+    }
+
+    // ⏸️ 3. 【バグ修正：現在時の取得ボタンが機能しない件を解決】
+    function getCurrentTime(inputId) {
+        if (isPlayerReady && player && typeof player.pauseVideo === 'function') {
+            player.pauseVideo();
+            const currentTime = player.getCurrentTime();
+            document.getElementById(inputId).value = Math.round(currentTime * 10) / 10;
+        } else {
+            alert("動画プレーヤーがプログラムと連動していません。動画を一度再生させてからお試しください。");
+        }
+    }
+
+    // 💾 4. クラウド直接保存
+    async function saveData() {
+        const rowId = document.getElementById('editRowId').value;
+        const title = document.getElementById('inputTitle').value.trim();
+        const start_time = parseFloat(document.getElementById('inputStart').value);
+        const end_time = parseFloat(document.getElementById('inputEnd').value);
+        const comment = document.getElementById('inputComment').value.trim();
+
+        if (!title || isNaN(start_time) || isNaN(end_time)) {
+            alert('タイトル、開始時間、終了時間は必須項目です。');
+            return;
         }
 
-        // ⏸️ 3. YouTubeの現在時間を一時停止して取得する機能
-        function getCurrentTime(inputId) {
-            if (isPlayerReady && player && typeof player.pauseVideo === 'function') {
-                player.pauseVideo();
-                const currentTime = player.getCurrentTime();
-                document.getElementById(inputId).value = Math.round(currentTime * 10) / 10;
+        const payload = { title, start_time, end_time, comment };
+        showLoading(true);
+
+        try {
+            if (!rowId) {
+                const { error } = await supabaseClient.from('touro_data').insert([payload]);
+                if (error) throw error;
+            } else {
+                const { error } = await supabaseClient.from('touro_data').update(payload).eq('id', rowId);
+                if (error) throw error;
             }
+            resetForm();
+            await loadTouroData(); 
+            alert('データベースへ直接保存しました！');
+        } catch (err) {
+            alert('保存に失敗しました: ' + err.message);
+        } finally {
+            showLoading(false);
         }
+    }
 
-        // 💾 4. データベースへ直接Submit上書き保存
-        async function saveData() {
-            const rowId = document.getElementById('editRowId').value;
-            const title = document.getElementById('inputTitle').value.trim();
-            const start_time = parseFloat(document.getElementById('inputStart').value);
-            const end_time = parseFloat(document.getElementById('inputEnd').value);
-            const comment = document.getElementById('inputComment').value.trim();
-
-            if (!title || isNaN(start_time) || isNaN(end_time)) {
-                alert('タイトル、開始時間、終了時間は必須項目です。');
-                return;
-            }
-
-            const payload = { title, start_time, end_time, comment };
+    // ❌ 5. 削除機能
+    async function deleteData(rowId, title) {
+        if (confirm(`本当に「${title}」の解説をデータベースから完全削除しますか？`)) {
             showLoading(true);
-
             try {
-                if (!rowId) {
-                    const { error } = await supabaseClient.from('touro_data').insert([payload]);
-                    if (error) throw error;
-                } else {
-                    const { error } = await supabaseClient.from('touro_data').update(payload).eq('id', rowId);
-                    if (error) throw error;
-                }
-                resetForm();
-                await loadTouroData(); 
-                alert('データベースへ直接保存しました！');
+                const { error } = await supabaseClient.from('touro_data').delete().eq('id', rowId);
+                if (error) throw error;
+                await loadTouroData();
+                alert('削除が完了しました。');
             } catch (err) {
-                alert('保存に失敗しました: ' + err.message);
+                alert('削除に失敗しました: ' + err.message);
             } finally {
                 showLoading(false);
             }
         }
+    }
 
-        // ❌ 5. 削除機能
-        async function deleteData(rowId, title) {
-            if (confirm(`本当に「${title}」の解説をデータベースから完全削除しますか？`)) {
-                showLoading(true);
-                try {
-                    const { error } = await supabaseClient.from('touro_data').delete().eq('id', rowId);
-                    if (error) throw error;
-                    await loadTouroData();
-                    alert('削除が完了しました。');
-                } catch (err) {
-                    alert('削除に失敗しました: ' + err.message);
-                } finally {
-                    showLoading(false);
-                }
-            }
-        }
+    function startEdit(rowId) {
+        const item = touroData.find(d => d.id == rowId);
+        document.getElementById('editRowId').value = item.id;
+        document.getElementById('inputTitle').value = item.title;
+        document.getElementById('inputStart').value = item.start_time;
+        document.getElementById('inputEnd').value = item.end_time;
+        document.getElementById('inputComment').value = item.comment;
+        
+        document.getElementById('formTitle').textContent = "📝 解説の編集変更";
+        document.getElementById('btnSubmit').textContent = "💾 変更を確定して上書きする";
+        document.getElementById('btnCancel').style.display = "block";
+        window.scrollTo({ top: document.querySelector('.editor-box').offsetTop - 20, behavior: 'smooth' });
+    }
 
-        function startEdit(rowId) {
-            const item = touroData.find(d => d.id == rowId);
-            document.getElementById('editRowId').value = item.id;
-            document.getElementById('inputTitle').value = item.title;
-            document.getElementById('inputStart').value = item.start_time;
-            document.getElementById('inputEnd').value = item.end_time;
-            document.getElementById('inputComment').value = item.comment;
+    function resetForm() {
+        document.getElementById('editRowId').value = "";
+        document.getElementById('inputTitle').value = "";
+        document.getElementById('inputStart').value = "";
+        document.getElementById('inputEnd').value = "";
+        document.getElementById('inputComment').value = "";
+        document.getElementById('formTitle').textContent = "➕ 新しい解説の追加";
+        document.getElementById('btnSubmit').textContent = "💾 データベースへ直接保存する";
+        document.getElementById('btnCancel').style.display = "none";
+    }
+
+    function showLoading(state) {
+        document.getElementById('loadingOverlay').style.display = state ? "flex" : "none";
+    }
+
+    function togglePanel() {
+        const controlPanel = document.getElementById('controlPanel');
+        const togglePanelBtn = document.getElementById('togglePanelBtn');
+        const isOpen = controlPanel.classList.toggle('open');
+        if (isOpen) { togglePanelBtn.textContent = "❌ コントロールパネルを閉じる"; togglePanelBtn.style.background = "#e74c3c"; } 
+        else { togglePanelBtn.textContent = "🛠️ コントロールパネルを開く"; togglePanelBtn.style.background = "#34495e"; }
+    }
+
+    // 🛠️【バグ修正：視聴モードのジャンプボタンが機能しない件を解決】
+    function jumpTo(seconds) {
+        if (isPlayerReady && player && typeof player.seekTo === 'function') {
+            player.seekTo(seconds, true);
+            player.playVideo();
             
-            document.getElementById('formTitle').textContent = "📝 解説の編集変更";
-            document.getElementById('btnSubmit').textContent = "💾 変更を確定して上書きする";
-            document.getElementById('btnCancel').style.display = "block";
-            window.scrollTo({ top: document.querySelector('.editor-box').offsetTop - 20, behavior: 'smooth' });
+            const parts = document.querySelectorAll('.part');
+            parts.forEach(part => {
+                const start = parseFloat(part.getAttribute('data-start'));
+                const end = parseFloat(part.getAttribute('data-end'));
+                if (seconds >= start && seconds < end) {
+                    parts.forEach(p => p.classList.remove('active'));
+                    part.classList.add('active');
+                    currentActivePart = part;
+                }
+            });
         }
+    }
 
-        function resetForm() {
-            document.getElementById('editRowId').value = "";
-            document.getElementById('inputTitle').value = "";
-            document.getElementById('inputStart').value = "";
-            document.getElementById('inputEnd').value = "";
-            document.getElementById('inputComment').value = "";
-            document.getElementById('formTitle').textContent = "➕ 新しい解説の追加";
-            document.getElementById('btnSubmit').textContent = "💾 データベースへ直接保存する";
-            document.getElementById('btnCancel').style.display = "none";
+    // 🛠️【バグ修正：視聴モードの2.5秒スキップ等が機能しない件を解決】
+    function skip(seconds) {
+        if (isPlayerReady && player && typeof player.getCurrentTime === 'function') {
+            const targetTime = player.getCurrentTime() + seconds;
+            player.seekTo(targetTime, true);
         }
+    }
 
-        function showLoading(state) {
-            document.getElementById('loadingOverlay').style.display = state ? "flex" : "none";
+    // 🛠️【バグ修正：視聴モードの倍速変更が機能しない件を解決】
+    function changeSpeed(speed) {
+        if (isPlayerReady && player && typeof player.setPlaybackRate === 'function') {
+            player.setPlaybackRate(speed);
+            document.getElementById('speedDisplay').textContent = `速度: ${speed}x`;
         }
+    }
 
-        function togglePanel() {
-            const cp = document.getElementById('controlPanel'), btn = document.getElementById('togglePanelBtn');
-            const isOpen = cp.classList.toggle('open');
-            if (isOpen) { togglePanelBtn.textContent = "❌ コントロールパネルを閉じる"; togglePanelBtn.style.background = "#e74c3c"; } 
-            else { togglePanelBtn.textContent = "🛠️ コントロールパネルを開く"; togglePanelBtn.style.background = "#34495e"; }
-        }
+    function toggleLoop() {
+        const loopBtn = document.getElementById('loopBtn');
+        isPartLoopActive = !isPartLoopActive;
+        if (isPartLoopActive) { loopBtn.classList.add('active'); loopBtn.textContent = "🔄 パート連打ループ: ON"; } 
+        else { loopBtn.classList.remove('active'); loopBtn.textContent = "🔄 パート連打ループ: OFF"; }
+    }
 
-        // ★【確実な復元】ローカル動画版で大成功していたシンプルな動画遠隔操作ロジック
-        function jumpTo(seconds) {
-            if (isPlayerReady && player && typeof player.seekTo === 'function') {
-                player.seekTo(seconds, true);
-                player.playVideo();
-                
-                const parts = document.querySelectorAll('.part');
+    function checkVideoTime() {
+        if (document.getElementById('mainSystem').style.display === "block" && isPlayerReady && player && typeof player.getCurrentTime === 'function') {
+            const currentTime = player.getCurrentTime();
+            const parts = document.querySelectorAll('.part');
+
+            if (isPartLoopActive && currentActivePart) {
+                const start = parseFloat(currentActivePart.getAttribute('data-start'));
+                const end = parseFloat(currentActivePart.getAttribute('data-end'));
+                if (currentTime >= (end - 0.1) || currentTime < start) {
+                    player.seekTo(start, true);
+                }
+            } 
+            else if (document.getElementById('viewerSection').classList.contains('active')) {
                 parts.forEach(part => {
                     const start = parseFloat(part.getAttribute('data-start'));
                     const end = parseFloat(part.getAttribute('data-end'));
-                    if (seconds >= start && seconds < end) {
-                        parts.forEach(p => p.classList.remove('active'));
-                        part.classList.add('active');
-                        currentActivePart = part;
+
+                    if (currentTime >= start && currentTime < end) {
+                        if (!part.classList.contains('active')) {
+                            parts.forEach(p => p.classList.remove('active'));
+                            part.classList.add('active');
+                            currentActivePart = part;
+                            if (window.innerWidth >= 768) {
+                                part.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        }
                     }
                 });
             }
         }
-
-        function skip(seconds) {
-            if (isPlayerReady && player && typeof player.getCurrentTime === 'function') {
-                const targetTime = player.getCurrentTime() + seconds;
-                player.seekTo(targetTime, true);
-            }
-        }
-
-        function changeSpeed(speed) {
-            if (isPlayerReady && player && typeof player.setPlaybackRate === 'function') {
-                player.setPlaybackRate(speed);
-                document.getElementById('speedDisplay').textContent = `速度: ${speed}x`;
-            }
-        }
-
-        function toggleLoop() {
-            isPartLoopActive = !isPartLoopActive;
-            if (isPartLoopActive) { loopBtn.classList.add('active'); loopBtn.textContent = "🔄 パート連打ループ: ON"; } 
-            else { loopBtn.classList.remove('active'); loopBtn.textContent = "🔄 パート連打ループ: OFF"; }
-        }
-
-        function checkVideoTime() {
-            if (document.getElementById('mainSystem').style.display === "block" && isPlayerReady && player && typeof player.getCurrentTime === 'function') {
-                const ct = player.getCurrentTime();
-                const parts = document.querySelectorAll('.part');
-
-                if (isPartLoopActive && currentActivePart) {
-                    const start = parseFloat(currentActivePart.getAttribute('data-start'));
-                    const end = parseFloat(currentActivePart.getAttribute('data-end'));
-                    if (ct >= (end - 0.1) || ct < start) {
-                        player.seekTo(start, true);
-                    }
-                } 
-                else if (document.getElementById('viewerSection').classList.contains('active')) {
-                    parts.forEach(part => {
-                        const start = parseFloat(part.getAttribute('data-start'));
-                        const end = parseFloat(part.getAttribute('data-end'));
-
-                        if (ct >= start && ct < end) {
-                            if (!part.classList.contains('active')) {
-                                parts.forEach(p => p.classList.remove('active'));
-                                part.classList.add('active');
-                                currentActivePart = part;
-                                if (window.innerWidth >= 768) {
-                                    part.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-            requestAnimationFrame(checkVideoTime);
-        }
+        requestAnimationFrame(checkVideoTime);
+    }
     </script>
+
 </body>
 </html>
