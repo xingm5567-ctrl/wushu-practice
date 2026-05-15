@@ -20,22 +20,29 @@
         .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         
-        /* ★【新規】ジャンプした瞬間だけ、中央の一時停止マークをピンポイントに覆い隠す半透明のマスク */
+        /* ★【重要修正】YouTubeへの通信電波を100%通すための目隠しマスク設定 */
         .video-mask {
             position: absolute;
-            top: 15%;
-            left: 35%;
-            width: 30%;
-            height: 50%;
-            background: #000; /* 動画の背景（黒）と同化させてマークを隠す */
+            top: 20%;      /* マークの出る位置にぴったり合わせる */
+            left: 38%;
+            width: 24%;
+            height: 40%;
+            background: #000; 
             z-index: 105;
             opacity: 0;
-            pointer-events: none;
+            
+            /* 【決定的な修正】これを入れることで、マスクが透明な壁にならず、ボタンの通信電波を100%動画プレイヤーに通過させます */
+            pointer-events: none; 
+            
             transition: opacity 0.15s ease;
-            border-radius: 50%; /* YouTubeの丸いマークの形に合わせて優しく隠す */
-            filter: blur(10px); /* 輪郭をぼかして動画に馴染ませる */
+            border-radius: 50%; 
+            filter: blur(8px); 
         }
-        .video-mask.show { opacity: 0.95; } /* マスク出現時 */
+        /* マスク出現時も、動画の操作を邪魔しないように pointer-events: none; を徹底維持します */
+        .video-mask.show { 
+            opacity: 0.98; 
+            pointer-events: none; 
+        } 
 
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
