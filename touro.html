@@ -4,35 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>武術套路 オンライン練習＆編集システム（2画面版）</title>
-    <!-- Supabase公式スクリプト -->
     <script src="https://jsdelivr.net"></script>
     <style>
         * { box-sizing: border-box; }
         body { font-family: sans-serif; margin: 0; padding: 15px; background: #f5f5f5; color: #333; }
         
-        /* 🔒 ログイン画面用スタイル */
         #authSection { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; gap: 15px; }
         .auth-box { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 360px; text-align: center; }
         .auth-box h2 { margin-top: 0; font-size: 18px; color: #34495e; margin-bottom: 15px; }
         .auth-error { color: #e74c3c; font-size: 13px; font-weight: bold; margin-top: 5px; display: none; }
 
-        /* 📱 メイン画面用スタイル */
         #mainSystem { display: none; }
         .container { display: flex; flex-direction: column; gap: 20px; }
         
         .video-area { position: sticky; top: 0; background: #f5f5f5; padding-bottom: 0; z-index: 100; }
         
-        /* 🎦 2つのプレイヤーを完全に重ね合わせるためのWrapper設定 */
+        /* 📱 2画面を完全に同じ位置に重ねるための設定 */
         .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* メイン動画Aとサブ動画Bを同じ位置に絶対配置 */
-        .player-iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; transition: opacity 0.2s ease-in-out; }
+        .video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: opacity 0.3s ease-in-out; }
+        iframe { width: 100%; height: 100%; border: none; }
         
-        /* 💡 隠滅用フラグCSS：表示中の動画を前面（z-indexを高く）にし、隠す方は透明度を0にする */
-        #ytPlayerA { z-index: 102; opacity: 1; }
-        #ytPlayerB { z-index: 101; opacity: 0; }
-        .video-wrapper.switch-active #ytPlayerA { z-index: 101; opacity: 0; }
-        .video-wrapper.switch-active #ytPlayerB { z-index: 103; opacity: 1; } /* サブを最前面へ */
+        /* 初期状態：メインAを表示(1)、サブBを透明(0)にして隠す */
+        #containerA { opacity: 1; z-index: 102; }
+        #containerB { opacity: 0; z-index: 101; pointer-events: none; }
 
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
@@ -95,7 +90,7 @@
 </head>
 <body>
 
-    <!-- 🔒 合言葉の認証画面 -->
+    <!-- 🔒 ログイン画面 -->
     <div id="authSection">
         <div class="auth-box">
             <h2>🥋 武術套路資料室 ログイン</h2>
@@ -110,9 +105,14 @@
     <div id="mainSystem">
         <div class="container">
             <div class="video-area">
-                <div class="video-wrapper" id="videoWrapper">
-                    <!-- ★自動変換バグを回避するため、全角文字を入れたiframeを内部スクリプトで後述書き換えします -->
-                    <div id="playerContainer"></div>
+                <div class="video-wrapper">
+                    <!-- ★システムによる自動文字化け・URL短勝を100%防止するため、2個のプレイヤーを完全にプレーンなタグとして並べます -->
+                    <div class="video-container" id="containerA">
+                        <div id="ytPlayerA"></div>
+                    </div>
+                    <div class="video-container" id="containerB">
+                        <div id="ytPlayerB"></div>
+                    </div>
                 </div>
 
                 <div class="mode-bar">
@@ -179,29 +179,18 @@
     <div class="loading-overlay" id="loadingOverlay">⌛ 通信中...</div>
 
     <script>
-        // 🔴🔴 【最重要】あなたのURLとPublishable keyに正確に書き換えてください 🔴🔴
+        // 🔴🔴 【最重要】あなたのご自身の情報をここに貼り付けてください 🔴🔴
         const SUPABASE_URL = "https://dzshvuyxhnuxtuxbidqd.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_TWqblYfo55RGuZ-3fPH06g_Ud8KzBlQ"; 
-        
-        // 🔴🔴 【最重要】あなたのYouTubeの動画ID（英数字11桁）とGitHubユーザー名を入力してください 🔴🔴
         const YOUTUBE_VIDEO_ID = "t0QY8YNNzkw"; 
-        const GITHUB_USERNAME = "xingm5567-ctrl"; 
 
-        // 🔗 2つの動画プレイヤー（メインA と サブB）をHTMLへ強制的に直書き流し込み
-        const containerHTML = `
-            <iframe id="ytPlayerA" class="player-iframe" src="https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?enablejsapi=1&origin=https://${GITHUB_USERNAME}.github.io&playsinline=1&controls=1&rel=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-            <iframe id="ytPlayerB" class="player-iframe" src="https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?enablejsapi=1&origin=https://${GITHUB_USERNAME}.github.io&playsinline=1&controls=0&rel=0&disablekb=1&showinfo=0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        `;
-        document.getElementById('playerContainer').innerHTML = containerHTML.replace(/：／／/g, "://").replace(/．/g, ".");
-
-        let supabaseClient;
+        // 接続処理を最優先で安全に初期化起動します
+        let supabaseClient = null;
         try {
             let cleanedUrl = SUPABASE_URL.trim().replace(/\/+$/, "");
-            supabaseClient = window.supabase.createClient(cleanedUrl, SUPABASE_ANON_KEY, {
-                auth: { persistSession: false }
-            });
+            supabaseClient = window.supabase.createClient(cleanedUrl, SUPABASE_ANON_KEY);
         } catch (e) {
-            console.error("Supabase初期化エラー:", e);
+            console.error("Supabase接続初期化エラー:", e);
         }
 
         let playerA = null;
@@ -209,39 +198,35 @@
         let touroData = [];
         let isPartLoopActive = false;
         let currentActivePart = null;
-        let readyCount = 0; // 2つのプレイヤーの準備状況カウント
-        let isSystemReady = false;
-        let activePlayerType = 'A'; // 現在画面に見えているプレイヤー ('A' または 'B')
-        let switchTimeout = null;
+        let isPlayerAReady = false;
+        let isPlayerBReady = false;
 
-        // YouTube APIの自動読み込み
+        // YouTube API公式スクリプトのロード
         const tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         const firstScriptTag = document.getElementsByTagName('script');
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        // 2つの動画を同時に操作できるようにそれぞれ紐付け
+        // 2つの動画プレイヤーをAPIで直接呼び出して組み立てます
         function onYouTubeIframeAPIReady() {
             playerA = new YT.Player('ytPlayerA', {
-                events: { 'onReady': function() { checkAllPlayerReady(); } }
+                videoId: YOUTUBE_VIDEO_ID,
+                playerVars: { 'playsinline': 1, 'controls': 1, 'rel': 0 },
+                events: { 'onReady': () => { isPlayerAReady = true; } }
             });
             playerB = new YT.Player('ytPlayerB', {
-                events: { 'onReady': function() { checkAllPlayerReady(); } }
+                videoId: YOUTUBE_VIDEO_ID,
+                playerVars: { 'playsinline': 1, 'controls': 0, 'rel': 0, 'disablekb': 1 },
+                events: { 'onReady': () => { isPlayerBReady = true; } }
             });
         }
 
-        function checkAllPlayerReady() {
-            readyCount++;
-            if (readyCount === 2) {
-                isSystemReady = true;
-                console.log("🟢 2画面シンクロシステム起動完了");
-            }
-        }
-
-        // 🔑 1. 合言葉のチェック
         async function checkAuth() {
             const inputPass = document.getElementById('authPassword').value.trim();
-            if (!supabaseClient) { alert("データベースの設定が正しくありません。"); return; }
+            if (!supabaseClient) {
+                alert("データベースの設定が正しくありません。URLとキーを再確認してください。");
+                return;
+            }
             showLoading(true);
             document.getElementById('authError').style.display = "none";
             
@@ -326,22 +311,17 @@
             });
         }
 
-        // 現在稼働中（アクティブ）のプレイヤーオブジェクトを返す便利関数
-        function getActivePlayer() {
-            return activePlayerType === 'A' ? playerA : playerB;
-        }
-
-        // ⏸️ 3. 現在時の取得
         function getCurrentTime(inputId) {
-            const activePlayer = getActivePlayer();
-            if (isSystemReady && activePlayer && typeof activePlayer.pauseVideo === 'function') {
-                activePlayer.pauseVideo();
-                const currentTime = activePlayer.getCurrentTime();
+            // メインプレイヤーAから安全に現在時間をキャプチャします
+            if (isPlayerAReady && playerA && typeof playerA.pauseVideo === 'function') {
+                playerA.pauseVideo();
+                const currentTime = playerA.getCurrentTime();
                 document.getElementById(inputId).value = Math.round(currentTime * 10) / 10;
+            } else {
+                alert("動画の読み込みが完了していません。");
             }
         }
 
-        // 💾 4. クラウド直接保存
         async function saveData() {
             const rowId = document.getElementById('editRowId').value;
             const title = document.getElementById('inputTitle').value.trim();
@@ -349,24 +329,45 @@
             const end_time = parseFloat(document.getElementById('inputEnd').value);
             const comment = document.getElementById('inputComment').value.trim();
 
-            if (!title || isNaN(start_time) || isNaN(end_time)) { alert('全項目必須です。'); return; }
+            if (!title || isNaN(start_time) || isNaN(end_time)) {
+                alert('タイトル、開始時間、終了時間は必須項目です。');
+                return;
+            }
+
             const payload = { title, start_time, end_time, comment };
             showLoading(true);
+
             try {
-                if (!rowId) { await supabaseClient.from('touro_data').insert([payload]); } 
-                else { await supabaseClient.from('touro_data').update(payload).eq('id', rowId); }
-                resetForm(); await loadTouroData(); alert('保存しました！');
-            } catch (err) { alert('保存失敗: ' + err.message); } finally { showLoading(false); }
+                if (!rowId) {
+                    const { error } = await supabaseClient.from('touro_data').insert([payload]);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('touro_data').update(payload).eq('id', rowId);
+                    if (error) throw error;
+                }
+                resetForm();
+                await loadTouroData(); 
+                alert('データベースへ直接保存しました！');
+            } catch (err) {
+                alert('保存に失敗しました: ' + err.message);
+            } finally {
+                showLoading(false);
+            }
         }
 
-        // ❌ 5. 削除機能
         async function deleteData(rowId, title) {
-            if (confirm(`本当に「${title}」を削除しますか？`)) {
+            if (confirm(`本当に「${title}」の解説をデータベースから完全削除しますか？`)) {
                 showLoading(true);
                 try {
-                    await supabaseClient.from('touro_data').delete().eq('id', rowId);
-                    await loadTouroData(); alert('削除しました。');
-                } catch (err) { alert('削除失敗: ' + err.message); } finally { showLoading(false); }
+                    const { error } = await supabaseClient.from('touro_data').delete().eq('id', rowId);
+                    if (error) throw error;
+                    await loadTouroData();
+                    alert('削除が完了しました。');
+                } catch (err) {
+                    alert('削除に失敗しました: ' + err.message);
+                } finally {
+                    showLoading(false);
+                }
             }
         }
 
@@ -377,6 +378,7 @@
             document.getElementById('inputStart').value = item.start_time;
             document.getElementById('inputEnd').value = item.end_time;
             document.getElementById('inputComment').value = item.comment;
+            
             document.getElementById('formTitle').textContent = "📝 解説の編集変更";
             document.getElementById('btnSubmit').textContent = "💾 変更を確定して上書きする";
             document.getElementById('btnCancel').style.display = "block";
@@ -384,85 +386,91 @@
         }
 
         function resetForm() {
-            document.getElementById('editRowId').value = ""; document.getElementById('inputTitle').value = ""; document.getElementById('inputStart').value = ""; document.getElementById('inputEnd').value = ""; document.getElementById('inputComment').value = "";
-            document.getElementById('formTitle').textContent = "➕ 新しい解説の追加"; document.getElementById('btnSubmit').textContent = "💾 データベースへ直接保存する"; document.getElementById('btnCancel').style.display = "none";
+            document.getElementById('editRowId').value = "";
+            document.getElementById('inputTitle').value = "";
+            document.getElementById('inputStart').value = "";
+            document.getElementById('inputEnd').value = "";
+            document.getElementById('inputComment').value = "";
+            document.getElementById('formTitle').textContent = "➕ 新しい解説の追加";
+            document.getElementById('btnSubmit').textContent = "💾 データベースへ直接保存する";
+            document.getElementById('btnCancel').style.display = "none";
         }
 
-        function showLoading(state) { document.getElementById('loadingOverlay').style.display = state ? "flex" : "none"; }
+        function showLoading(state) {
+            document.getElementById('loadingOverlay').style.display = state ? "flex" : "none";
+        }
+
         function togglePanel() {
-            const controlPanel = document.getElementById('controlPanel'); const togglePanelBtn = document.getElementById('togglePanelBtn');
+            const controlPanel = document.getElementById('controlPanel');
+            const togglePanelBtn = document.getElementById('togglePanelBtn');
             const isOpen = controlPanel.classList.toggle('open');
             if (isOpen) { togglePanelBtn.textContent = "❌ コントロールパネルを閉じる"; togglePanelBtn.style.background = "#e74c3c"; } 
             else { togglePanelBtn.textContent = "🛠️ コントロールパネルを開く"; togglePanelBtn.style.background = "#34495e"; }
         }
 
-        // 🛡️【超重要：5秒マークを物理的に隠滅するジャンプ命令】
+        // ⏱️ ⚡ 【最重要：2画面時間差シンクロジャンプシステム】
         function jumpTo(seconds) {
-            if (!isSystemReady || !playerA || !playerB) return;
+            if (isPlayerAReady && isPlayerBReady && playerA && playerB) {
+                const containerA = document.getElementById('containerA');
+                const containerB = document.getElementById('containerB');
+                const currentRate = playerA.getPlaybackRate() || 1.0;
 
-            // タイマーが走っていたらクリア
-            if (switchTimeout) clearTimeout(switchTimeout);
+                // 1. サブ動画プレイヤーBを「マークの出ないシーク」で目的の秒数にワープ
+                playerB.setPlaybackRate(currentRate);
+                playerB.seekTo(seconds, true);
+                playerB.playVideo();
 
-            const speed = playerA.getPlaybackRate() || 1.0;
+                // 2. 画面を切り替える：マークが出るメインAを隠し(0)、綺麗なサブBを最前面に浮上(1)
+                containerA.style.opacity = "0";
+                containerA.style.zIndex = "101";
+                containerB.style.opacity = "1";
+                containerB.style.zIndex = "102";
 
-            // 1. サブ動画B（マークが出ない設定）を最前面へ切り替え
-            document.getElementById('videoWrapper').classList.add('switch-active');
-            activePlayerType = 'B';
+                // 3. その裏で、メイン動画Aも同じ秒数にこっそりジャンプさせておく
+                playerA.seekTo(seconds, true);
+                playerA.playVideo();
 
-            // 2. 両方の動画をその目標秒数へ同時にワープ
-            playerA.seekTo(seconds, true);
-            playerB.seekTo(seconds, true);
+                // 4. 4.5秒後（メインAの邪魔なマークが完全に消え去ったタイミング）で、メインAへ何食わぬ顔でバトンタッチ
+                setTimeout(() => {
+                    if (document.getElementById('viewerSection').classList.contains('active')) {
+                        // メインAの時間をサブBの現在の時間に完全同期させてズレを無くす
+                        const syncTime = playerB.getCurrentTime();
+                        playerA.seekTo(syncTime, true);
+                        playerA.playVideo();
 
-            // 3. サブ動画Bだけを即座に再生（マークのないクリアな大画面で套路スタート）
-            playerB.setPlaybackRate(speed);
-            playerB.playVideo();
-            
-            // メイン動画Aも裏側でひっそり再生（マークの5秒間タイマーを裏で消化させます）
-            playerA.setPlaybackRate(speed);
-            playerA.playVideo();
+                        // 画面を戻す：メインAを表へ(1)、サブBを裏へ(0)
+                        containerB.style.opacity = "0";
+                        containerB.style.zIndex = "101";
+                        containerA.style.opacity = "1";
+                        containerA.style.zIndex = "102";
+                    }
+                }, 4500);
 
-            // 4. 4.8秒後（メインAのマークが消え去った絶妙な瞬間）にメインAへバトンタッチ
-            switchTimeout = setTimeout(() => {
-                if (activePlayerType === 'B') {
-                    // サブBの現在の正確な時間を取得し、メインAのズレを完全補正
-                    const exactTime = playerB.getCurrentTime();
-                    playerA.seekTo(exactTime, true);
-                    playerA.playVideo();
-
-                    // メイン動画Aをパッと最前面に戻す（マークは綺麗に消え去っています）
-                    document.getElementById('videoWrapper').classList.remove('switch-active');
-                    activePlayerType = 'A';
-                    playerB.pauseVideo(); // サブは用済みなので一時停止
-                }
-            }, 4800);
-
-            // ハイライト同期処理
-            const parts = document.querySelectorAll('.part');
-            parts.forEach(part => {
-                const start = parseFloat(part.getAttribute('data-start'));
-                const end = parseFloat(part.getAttribute('data-end'));
-                if (seconds >= start && seconds < end) {
-                    parts.forEach(p => p.classList.remove('active'));
-                    part.classList.add('active');
-                    currentActivePart = part;
-                }
-            });
+                // 解説文のハイライト更新
+                const parts = document.querySelectorAll('.part');
+                parts.forEach(part => {
+                    const start = parseFloat(part.getAttribute('data-start'));
+                    const end = parseFloat(part.getAttribute('data-end'));
+                    if (seconds >= start && seconds < end) {
+                        parts.forEach(p => p.classList.remove('active'));
+                        part.classList.add('active');
+                        currentActivePart = part;
+                    }
+                });
+            }
         }
 
-        // コントロールパネルのボタン連動
         function skip(seconds) {
-            const activePlayer = getActivePlayer();
-            if (isSystemReady && activePlayer && typeof activePlayer.getCurrentTime === 'function') {
-                const targetTime = activePlayer.getCurrentTime() + seconds;
-                // コントロールからのスキップも、マーク隠滅ジャンプ関数へ安全に回します
-                jumpTo(targetTime);
+            if (isPlayerAReady && playerA) {
+                const targetTime = playerA.getCurrentTime() + seconds;
+                jumpTo(targetTime); // スキップ時も2画面システムを流用してマークを隠滅
             }
         }
 
         function changeSpeed(speed) {
-            if (isSystemReady && playerA && playerB) {
+            if (isPlayerAReady && playerA) {
                 playerA.setPlaybackRate(speed);
-                playerB.setPlaybackRate(speed);
+                if (playerB) playerB.setPlaybackRate(speed);
                 document.getElementById('speedDisplay').textContent = `速度: ${speed}x`;
             }
         }
@@ -474,22 +482,19 @@
             else { loopBtn.classList.remove('active'); loopBtn.textContent = "🔄 パート連打ループ: OFF"; }
         }
 
-        // 時間監視
         function checkVideoTime() {
-            const activePlayer = getActivePlayer();
-            if (document.getElementById('mainSystem').style.display === "block" && isSystemReady && activePlayer && typeof activePlayer.getCurrentTime === 'function') {
-                const currentTime = activePlayer.getCurrentTime();
+            if (document.getElementById('mainSystem').style.display === "block" && isPlayerAReady && playerA && typeof playerA.getCurrentTime === 'function') {
+                const currentTime = playerA.getCurrentTime();
                 const parts = document.querySelectorAll('.part');
 
                 if (isPartLoopActive && currentActivePart) {
                     const start = parseFloat(currentActivePart.getAttribute('data-start'));
                     const end = parseFloat(currentActivePart.getAttribute('data-end'));
                     if (currentTime >= (end - 0.1) || currentTime < start) {
-                        // ループの巻き戻しも、マークを隠滅するjumpToに回すことで連打ループ中もマークが一切出なくなります
-                        jumpTo(start);
+                        jumpTo(start); // ループ時の巻き戻りも2画面システムでマークを隠滅
                     }
                 } 
-                else if (document.getElementById('viewerSection').classList.contains('active')) {
+                else if (document.getElementById('viewerSection').classList.contains('active') && document.getElementById('containerA').style.opacity !== "0") {
                     parts.forEach(part => {
                         const start = parseFloat(part.getAttribute('data-start'));
                         const end = parseFloat(part.getAttribute('data-end'));
