@@ -37,6 +37,7 @@
         }
 
         /* 🌟【70周辺ピンポイントドーム版】中央やや上のぼんやりした影の残り（凹み）を完全に平らにする設定 */
+        /* 🌟【全体トーンアップ版】均一なムラなしグラデーションを維持したまま、全体の明るさを力強く底上げする設定 */
         .bright-mask {
             position: absolute;
             top: 0;
@@ -44,16 +45,16 @@
             width: 100%;
             height: 50%; /* 画面の上半分 */
             
-            /* 【インクゼロの維持】色あせを防ぐため、完全な無色透明（マスク領域の定義のみ） */
+            /* 【無色透明の維持】白浮き・色あせを100%防ぐため、インクは一切増やしません */
             background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【光量の最適化】
-               輝度を「1.45倍」に引き上げ、コントラストを「1.05」に引き締めます。
-               これにより、白みを発生させずに光の力だけでぼんやりした影の塊を奥底から救い出します */
-            backdrop-filter: brightness(1.45) contrast(1.05);
-            -webkit-backdrop-filter: brightness(1.45) contrast(1.05);
+            /* 【パワーの大幅底上げ】
+               ・全体の光量（輝度）を「1.45」から「1.75倍」へと一気に強化して、残った薄暗さを一掃します。
+               ・光を強くした分、道着の黒色や演者の輪郭がボヤけないよう、コントラストを「1.12」にガッチリ引き締めます。 */
+            backdrop-filter: brightness(1.75) contrast(1.12);
+            -webkit-backdrop-filter: brightness(1.75) contrast(1.12);
             
-            mix-blend-mode: color-dodge; /* 影に対して強力に光をブレンドするプロ仕様 */
+            mix-blend-mode: color-dodge; 
             z-index: 105; 
             opacity: 0; 
             pointer-events: none; 
@@ -62,10 +63,7 @@
         
         .bright-mask.show {
             opacity: 1;
-            /* ★【核心の修正】
-               ・完璧な下方（0%〜55%）を守るため、55%の高さに達するまでは光を「完全にゼロ(0)」にします。
-               ・ぼんやり暗かった『70の周辺』に光を集中させるため、72%の位置で一気に「0.35」の光量を照射（ドームの頂点）。
-               ・上端（100%）はすでに綺麗に消えているため、光が余って眩しくならないよう「0.22」へと優しくなだらかに光を引き下げます。 */
+            /* ★【完全据え置き】完璧にフィットした「72%を頂点とするドーム型の比率」は1ミリも崩さずそのまま維持します */
             mask-image: linear-gradient(to top, 
                 rgba(0,0,0,0) 0%, 
                 rgba(0,0,0,0) 55%, 
@@ -79,8 +77,7 @@
                 rgba(0,0,0,0.22) 100%
             );
         }
-
-
+        
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
         .btn-viewer { background: #3498db; color: white; }
