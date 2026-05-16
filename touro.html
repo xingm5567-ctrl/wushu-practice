@@ -36,23 +36,22 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【70周辺ピンポイントドーム版】中央やや上のぼんやりした影の残り（凹み）を完全に平らにする設定 */
-        /* 🌟【全体トーンアップ版】均一なムラなしグラデーションを維持したまま、全体の明るさを力強く底上げする設定 */
+        /* 🌟【最終極限トーンアップ版】均一なムラなし比率を維持し、明るさを極限まで引き上げる設定 */
         .bright-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%; /* 画面の上半分 */
+            height: 50%; 
             
-            /* 【無色透明の維持】白浮き・色あせを100%防ぐため、インクは一切増やしません */
+            /* 【無色透明の維持】白浮き・濁りを100%防ぐため、インクは一切使いません */
             background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【パワーの大幅底上げ】
-               ・全体の光量（輝度）を「1.45」から「1.75倍」へと一気に強化して、残った薄暗さを一掃します。
-               ・光を強くした分、道着の黒色や演者の輪郭がボヤけないよう、コントラストを「1.12」にガッチリ引き締めます。 */
-            backdrop-filter: brightness(1.75) contrast(1.12);
-            -webkit-backdrop-filter: brightness(1.75) contrast(1.12);
+            /* 【極限の光量底上げ】
+               ・全体の光量（輝度）を「1.75」から「2.15倍」へと一気に跳ね上げ、残った暗さを完全に打ち消します。
+               ・光を限界まで強めた分、色彩や黒色が白まないよう、コントラストを「1.18」に高めてクッキリと引き締めます。 */
+            backdrop-filter: brightness(2.15) contrast(1.18);
+            -webkit-backdrop-filter: brightness(2.15) contrast(1.18);
             
             mix-blend-mode: color-dodge; 
             z-index: 105; 
@@ -63,7 +62,7 @@
         
         .bright-mask.show {
             opacity: 1;
-            /* ★【完全据え置き】完璧にフィットした「72%を頂点とするドーム型の比率」は1ミリも崩さずそのまま維持します */
+            /* ★【完全固定】大成功した「55%から立ち上がり、72%を頂点とする絶妙なドーム型の比率」は1ミリも動かしません */
             mask-image: linear-gradient(to top, 
                 rgba(0,0,0,0) 0%, 
                 rgba(0,0,0,0) 55%, 
@@ -77,6 +76,7 @@
                 rgba(0,0,0,0.22) 100%
             );
         }
+
         
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
