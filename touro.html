@@ -37,6 +37,7 @@
         }
 
         /* 🌟【上下均等相殺版】下方の明るさを抑え、上方の暗さを補って完全にフラットにする設定 */
+        /* 🌟【最終確定・完全フラット版】上下のわずかなムラを完全にゼロにする極限調整値 */
         .bright-mask {
             position: absolute;
             top: 0;
@@ -44,12 +45,12 @@
             width: 100%;
             height: 50%; 
             
-            /* 【傾斜の調整】中央から15%の位置までは明るさを入れず、上端（100%）に向かって白の比率を「0.15」へわずかに引き上げ、上方の暗さを補填します */
-            background: linear-gradient(to top, rgba(255,255,255,0) 15%, rgba(255,255,255,0.15) 100%);
+            /* 【最終調整】開始位置を22%まで上げて下方の白浮きを完全にカット。最上端は0.18にして上方の暗さを完璧に相殺します */
+            background: linear-gradient(to top, rgba(255,255,255,0) 22%, rgba(255,255,255,0.18) 100%);
             
-            /* 【全体の底上げ】輝度を「1.28」にわずかに高め、その分コントラストを通常（1.02）に近づけることで、下方のギラつきを完全に落ち着かせました */
-            backdrop-filter: brightness(1.28) contrast(1.02) saturate(1.05);
-            -webkit-backdrop-filter: brightness(1.28) contrast(1.02) saturate(1.05);
+            /* 【最終調整】輝度を1.26に微調整し、コントラストを通常（1.0）に戻すことで、光の色の濁りを100%排除しました */
+            backdrop-filter: brightness(1.26) contrast(1.0) saturate(1.02);
+            -webkit-backdrop-filter: brightness(1.26) contrast(1.0) saturate(1.02);
             
             z-index: 105; 
             opacity: 0; 
