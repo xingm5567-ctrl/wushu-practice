@@ -37,20 +37,20 @@
         }
 
         /* 🌟【新規追加】YouTubeの5秒間の薄暗い影を物理的に打ち消す『輝度・コントラスト相殺マスク』 */
-        /* 🌟【色彩工学解析】YouTubeの5秒間の薄暗い影を100%完全に打ち消す『輝度・コントラスト完全相殺マスク』 */
+        /* 🌟【精密微調整版】上部の眩しさを抑え、映像に完全に馴染ませる相殺マスク */
         .bright-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%; /* 画面の中央から上端（上半分） */
+            height: 50%; 
             
-            /* 【解析結果①】上端に向かって濃くなる黒（rgba:0.56）に対し、上端に向かって白（rgba:0.25）を絶妙に混ぜることで、灰色化による色あせを防止 */
-            background: linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 100%);
+            /* 【修正①】上端の眩しさを取るため、白の最大濃さを「0.25」から「0.12」へ大幅に引き下げます */
+            background: linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 100%);
             
-            /* 【解析結果②】暗化（0.56倍）されたRGBの光量を、数学的逆数（1 / (1 - 0.56 * 0.5) ≒ 1.38）で引き上げ、同時に失われたコントラストを1.15倍で完全復元 */
-            backdrop-filter: brightness(1.38) contrast(1.15) saturate(1.1);
-            -webkit-backdrop-filter: brightness(1.38) contrast(1.15) saturate(1.1);
+            /* 【修正②】全体的な眩しさを抑えるため、輝度を「1.38」から「1.22」へ優しく落とし、コントラストと彩度も連動してマイルドに調整しました */
+            backdrop-filter: brightness(1.22) contrast(1.1) saturate(1.05);
+            -webkit-backdrop-filter: brightness(1.22) contrast(1.1) saturate(1.05);
             
             z-index: 105; 
             opacity: 0; 
