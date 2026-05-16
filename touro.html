@@ -36,7 +36,7 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【放物線光量増幅版】白みを防ぎつつ、上端に向けて光のパワーを急上昇させて影を消し去る設定 */
+        /* 🌟【極限光量相殺版】白みを防ぎつつ、3倍の光量と覆い焼きで上端の暗闇を完全に消滅させる設定 */
         .bright-mask {
             position: absolute;
             top: 0;
@@ -44,15 +44,17 @@
             width: 100%;
             height: 50%; /* 画面の上半分 */
             
-            /* 【インクゼロの維持】色あせを防ぐため、100%無色透明を維持 */
+            /* 【インクゼロの維持】色あせを防ぐため、完全な無色透明（マスク領域の定義のみ） */
             background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【限界突破の光量】上端の目標光量を「1.65倍」まで超強力に引き上げます。
-               さらにコントラストを「1.1」に高めることで、光量を上げても黒色が絶対に白まないようにガッチリ引き締めます */
-            backdrop-filter: brightness(1.65) contrast(1.1);
-            -webkit-backdrop-filter: brightness(1.65) contrast(1.1);
+            /* 【限界突破の3倍光量】輝度を驚異の「3.0倍」まで爆発的に高めます。
+               さらにコントラストを「1.2倍」に引き締めることで、光量を最大に上げても演者の道着の黒色が絶対に白まないようにガッチリ固定します */
+            backdrop-filter: brightness(3.0) contrast(1.2);
+            -webkit-backdrop-filter: brightness(3.0) contrast(1.2);
             
-            mix-blend-mode: normal; 
+            /* 【暗闇の強制救出】裏側の黒い影に対してだけ強力に光を透過させて明るくする、プロ用の特殊なブレンド命令を適用します */
+            mix-blend-mode: color-dodge; 
+            
             z-index: 105; 
             opacity: 0; 
             pointer-events: none; 
@@ -61,11 +63,10 @@
         
         .bright-mask.show {
             opacity: 1;
-            /* ★【核心の修正】
-               直線（0%➔100%）ではなく、中間の光を限界まで削って上端（100%）の周辺だけで光量が「直角」に跳ね上がる特殊な湾曲マスクカーブ（二次関数）を設定。
-               これにより、下方の完璧なトーンを守ったまま、上端の残った暗さだけをピンポイントで消滅させます */
-            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,1) 100%);
-            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 60%, rgba(0,0,0,0.4) 85%, rgba(0,0,0,1) 100%);
+            /* 下方の完璧なトーン（60%付近まで）には余計な光を1ミリも入れず、
+               上端（100%）の周辺だけで光量を直角に跳ね上げる極限の湾曲マスクカーブ */
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.3) 85%, rgba(0,0,0,1) 100%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 65%, rgba(0,0,0,0.3) 85%, rgba(0,0,0,1) 100%);
         }
 
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
