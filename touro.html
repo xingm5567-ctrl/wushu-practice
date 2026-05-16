@@ -36,33 +36,36 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【原点回帰：等速直線相殺版】下方の完璧な傾斜を、そのまま遮断せず上端まで真っ直ぐ伸ばし切る極限設定 */
+        /* 🌟【色彩復元版】白の絵の具を完全排除し、動画本来の色彩のまま暗さだけを消し去る設定 */
         .bright-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%; /* 画面の上半分をカバー */
+            height: 50%; /* 画面の上半分 */
             
-            /* 【核心の修正】
-               変則的な途中のロック（0%固定）を完全に廃止。
-               合格点をいただいている下方の美しい光の傾斜をそのままベースにし、
-               上端（100%）に向かって、一切の歪みなく一定のペース（0.25）で真っ直ぐに白を馴染ませていきます。 */
-            background: linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0.25) 100%);
+            /* 【核心の修正①】白のインクを完全に捨て、100%無色透明（マスクの領域定義のみ）にします */
+            background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【トーンの完全調和】
-               輝度を「1.15倍」に優しく抑え、コントラストと彩度を通常（1.0）に戻しました。
-               これにより、下方の完璧なトーンを1ミリも壊すことなく、上方の薄暗さだけを均一な1本の直線で綺麗に消し去ります。 */
-            backdrop-filter: brightness(1.15) contrast(1.0) saturate(1.0);
-            -webkit-backdrop-filter: brightness(1.15) contrast(1.0) saturate(1.0);
+            /* 【核心の修正②】マスクの不透明度（mask-imageの原理）を適用し、上に向かってじわじわと「輝度（光量）」だけが強くなるようにブレンドします */
+            backdrop-filter: brightness(1.22);
+            -webkit-backdrop-filter: brightness(1.22);
+            
+            /* 【重要：色の濁り防止】絵の具が混ざらないようにするためのブラウザ命令 */
+            mix-blend-mode: normal; 
             
             z-index: 105; 
             opacity: 0; 
             pointer-events: none; 
             transition: opacity 0.2s ease; 
         }
+        
+        /* ★【重要修正③】50%の境界線で明るさが急変して目立つのを防ぐため、マスク全体の重なりを滑らかに調整します */
         .bright-mask.show {
             opacity: 1;
+            /* 上端（100%）へ向かうにつれて、輝度補正が1.0➔1.22倍へと一定の傾斜で綺麗に適用されます */
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
         }
 
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
