@@ -36,21 +36,18 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【超極限最大開放版】完璧なムラなし比率を維持し、光量を14倍まで限界突破させる設定 */
+        /* 🌟【等速直線・最大開放版】変則カーブを完全撤廃し、下から上まで1本の滑らかな傾斜で相殺する設定 */
         .bright-mask {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 50%; 
+            height: 50%; /* 画面の上半分 */
             
             /* 【インクゼロの徹底】色彩の濁りやモヤを防ぐため、100%無色透明を維持 */
             background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【超極限14倍パワー】
-               ・輝度をさらに2倍の「14.0」まで跳ね上げ、5秒間の黒い影を文字通り完全に消滅させます。
-               ・爆発的な光量で画面が真っ白になるのを防ぐため、コントラストを「5.0」まで極限に強化。
-               ・色彩が光で色あせるのを防ぎ、輪郭をクッキリ残すため、彩度（saturate）を「1.8」まで限界ブースト。 */
+            /* 【超極限14倍パワー＆引き締め】通常の14倍の光量、5倍のコントラスト、1.8倍の彩度をブレンド */
             backdrop-filter: brightness(14.0) contrast(5.0) saturate(1.8);
             -webkit-backdrop-filter: brightness(14.0) contrast(5.0) saturate(1.8);
             
@@ -63,22 +60,12 @@
         
         .bright-mask.show {
             opacity: 1;
-            /* ★【完全固定】大成功した「55%から立ち上がり、72%を頂点とする絶妙なドーム型の比率」は1ミリも動かしません */
-            mask-image: linear-gradient(to top, 
-                rgba(0,0,0,0) 0%, 
-                rgba(0,0,0,0) 55%, 
-                rgba(0,0,0,0.35) 72%, 
-                rgba(0,0,0,0.22) 100%
-            );
-            -webkit-mask-image: linear-gradient(to top, 
-                rgba(0,0,0,0) 0%, 
-                rgba(0,0,0,0) 55%, 
-                rgba(0,0,0,0.35) 72%, 
-                rgba(0,0,0,0.22) 100%
-            );
+            /* ★【核心の修正】変則的な中継地点（55%や72%など）の数値をすべて消去！
+               下端（0%）から上端（100%）に向けて、一切の歪みや引っかかりがない『1本のまっすぐな直線グラデーション』へ完全に戻します。 */
+            mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
         }
-
-        
+     
         .mode-bar { display: flex; gap: 8px; margin-top: 6px; }
         .btn-mode { flex: 1; padding: 10px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; text-align: center; font-size: 14px; }
         .btn-viewer { background: #3498db; color: white; }
