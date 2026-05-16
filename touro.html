@@ -36,7 +36,7 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【最終極限トーンアップ版】均一なムラなし比率を維持し、明るさを極限まで引き上げる設定 */
+        /* 🌟【限界突破トンスアップ版】ムラなし比率を完全維持し、光量を3.5倍まで最大開放する設定 */
         .bright-mask {
             position: absolute;
             top: 0;
@@ -44,14 +44,14 @@
             width: 100%;
             height: 50%; 
             
-            /* 【無色透明の維持】白浮き・濁りを100%防ぐため、インクは一切使いません */
+            /* 【インクゼロの徹底】色彩の濁りを防ぐため、100%無色透明を維持 */
             background: linear-gradient(to top, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 100%);
             
-            /* 【極限の光量底上げ】
-               ・全体の光量（輝度）を「1.75」から「2.15倍」へと一気に跳ね上げ、残った暗さを完全に打ち消します。
-               ・光を限界まで強めた分、色彩や黒色が白まないよう、コントラストを「1.18」に高めてクッキリと引き締めます。 */
-            backdrop-filter: brightness(2.15) contrast(1.18);
-            -webkit-backdrop-filter: brightness(2.15) contrast(1.18);
+            /* 【最大開放の3.5倍光量】
+               ・全体の光量を「2.15」から「3.5」まで一気に引き上げ、残った暗い膜を完全に消滅させます。
+               ・光を最大にした分、深い黒色や色彩をガッチリと引き締めるため、コントラストを「1.35」まで超強力に連動させます。 */
+            backdrop-filter: brightness(3.5) contrast(1.35);
+            -webkit-backdrop-filter: brightness(3.5) contrast(1.35);
             
             mix-blend-mode: color-dodge; 
             z-index: 105; 
