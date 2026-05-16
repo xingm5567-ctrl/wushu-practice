@@ -36,7 +36,7 @@
             transform: scale(0.1); 
         }
 
-        /* 🌟【最終極限調整版】下方の完璧なトーンを維持し、上方の白みを100%消し去る決定版 */
+        /* 🌟【黄金比・中間相殺版】上方の暗さと白みのちょうど真ん中を射抜く最終調整値 */
         .bright-mask {
             position: absolute;
             top: 0;
@@ -44,12 +44,12 @@
             width: 100%;
             height: 50%; 
             
-            /* 【白みの完全除去】下方の完璧な「70%まで完全ロック」はそのまま維持し、最上端（100%）の白の濃さを「0.32」から「0.21」へマイルドに引き下げて白浮きを完全に消滅させます */
-            background: linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.21) 100%);
+            /* 【中間の黄金比】下方の完璧な70%ロックはそのままに、最上端（100%）の白の濃さを前回の0.32と今回の0.21のジャスト中間である「0.26」に固定します */
+            background: linear-gradient(to top, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.26) 100%);
             
-            /* 【輝度の微同調】輝度を「1.15」から「1.18」へわずかに底ゲし、コントラストを「1.05」に高めることで、白んでんた黒色を引き締め、元の動画の鮮明な輪郭を100%復元します */
-            backdrop-filter: brightness(1.18) contrast(1.05) saturate(1.0);
-            -webkit-backdrop-filter: brightness(1.18) contrast(1.05) saturate(1.0);
+            /* 【トーンの完全調和】輝度を「1.16」、コントラストを「1.02」に微調整し、明るすぎず暗すぎない、動画本来の深い黒と鮮明さを100%復元しました */
+            backdrop-filter: brightness(1.16) contrast(1.02) saturate(1.0);
+            -webkit-backdrop-filter: brightness(1.16) contrast(1.02) saturate(1.0);
             
             z-index: 105; 
             opacity: 0; 
